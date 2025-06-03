@@ -14,7 +14,7 @@ import com.devsuperior.dscommerce.entities.Role;
 import com.devsuperior.dscommerce.entities.User;
 import com.devsuperior.dscommerce.projections.UserDetailsProjection;
 import com.devsuperior.dscommerce.repositories.UserRepository;
-import com.devsuperior.dscommerce.ultil.CustomUserUtil;
+import com.devsuperior.dscommerce.util.CustomUserUtil;
 
 @Service
 public class UserService implements UserDetailsService {

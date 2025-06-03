@@ -1,4 +1,4 @@
-package com.devsuperior.dscommerce.ultil;
+package com.devsuperior.dscommerce.util;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

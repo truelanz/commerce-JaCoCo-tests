@@ -21,7 +21,7 @@ import com.devsuperior.dscommerce.projections.UserDetailsProjection;
 import com.devsuperior.dscommerce.repositories.UserRepository;
 import com.devsuperior.dscommerce.tests.UserDetailsFactory;
 import com.devsuperior.dscommerce.tests.UserFactory;
-import com.devsuperior.dscommerce.ultil.CustomUserUtil;
+import com.devsuperior.dscommerce.util.CustomUserUtil;
 
 @ExtendWith(SpringExtension.class)
 public class UserServiceTests {
