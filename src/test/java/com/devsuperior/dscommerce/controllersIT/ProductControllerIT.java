@@ -9,8 +9,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.devsuperior.dscommerce.dto.ProductDTO;
+import com.devsuperior.dscommerce.entities.Category;
+import com.devsuperior.dscommerce.entities.Product;
+import com.devsuperior.dscommerce.tests.ProductFactory;
+import com.devsuperior.dscommerce.tests.TokenUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -20,15 +28,33 @@ public class ProductControllerIT {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private TokenUtil tokenUtil;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private Product product;
+    private Category category;
+    private ProductDTO productDTO;
     private String productName;
+    private String adminToken, clientToken, invalidToken;
+    private Long existingId, nonExistingId;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+    
         productName = "Macbook";
+        existingId = 1L;
+        nonExistingId = 100L;
+        adminToken = tokenUtil.obtainAccessToken(mockMvc, "alex@gmail.com", "123456");
+        clientToken = tokenUtil.obtainAccessToken(mockMvc, "maria@gmail.com", "123456");
+        invalidToken = adminToken + "8564";
 
+        product = ProductFactory.createProduct();
     }
 
-    @Test
+    @Test //200
     public void findAllShouldReturnPageWhenNameParamIsNotEmpty() throws Exception {
 
         ResultActions result = mockMvc
@@ -41,7 +67,7 @@ public class ProductControllerIT {
         result.andExpect(MockMvcResultMatchers.jsonPath("$.content[0].price").value(1250.0));
     }
 
-    @Test
+    @Test //200
     public void findAllShouldReturnPageWhenNameParamIsIsEmpty() throws Exception {
 
         ResultActions result = mockMvc
@@ -52,5 +78,137 @@ public class ProductControllerIT {
         result.andExpect(MockMvcResultMatchers.jsonPath("$.content[0].id").value(1L));
         result.andExpect(MockMvcResultMatchers.jsonPath("$.content[0].name").value("The Lord of the Rings"));
         result.andExpect(MockMvcResultMatchers.jsonPath("$.content[0].price").value(90.5));
+    }
+
+    @Test //201
+    public void insertShouldReturnProductDTOCreatedWhenAdminLogged() throws Exception {
+
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions result = mockMvc.perform(MockMvcRequestBuilders.post("/products")
+            .header("Authorization", "Bearer " + adminToken) // Deve haver um espaço entre Bearer e o token.
+            .content(jsonBody)
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON))
+            .andDo(MockMvcResultHandlers.print());
+
+        result.andExpect(MockMvcResultMatchers.status().isCreated());
+        result.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(26L));
+        result.andExpect(MockMvcResultMatchers.jsonPath("$.name").value("Play5"));
+        result.andExpect(MockMvcResultMatchers.jsonPath("$.price").value(4000.0));
+        result.andExpect(MockMvcResultMatchers.jsonPath("$.imgUrl").value("url/img"));
+        result.andExpect(MockMvcResultMatchers.jsonPath("$.categories[0].id").value(1L));
+
+    }
+
+    @Test //401
+    public void insertShouldReturnUnauthorizedWhenInvalidToken() throws Exception {
+
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions result = mockMvc.perform(MockMvcRequestBuilders.post("/products")
+            .header("Authorization", "Bearer " + invalidToken)
+            .content(jsonBody)
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON));
+
+        result.andExpect(MockMvcResultMatchers.status().isUnauthorized());
+    }
+
+    @Test //403
+    public void insertShouldReturnForbiddenWhenClientLogged() throws Exception {
+
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions result = mockMvc.perform(MockMvcRequestBuilders.post("/products")
+            .header("Authorization", "Bearer " + clientToken)
+            .content(jsonBody)
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON));
+
+        result.andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
+
+    @Test //422
+    public void insertShouldReturnUnprocessableEntityWhenAdminLoggedAndInvalidName() throws Exception {
+
+        product.setName("ad");
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions result = mockMvc.perform(MockMvcRequestBuilders.post("/products")
+            .header("Authorization", "Bearer " + adminToken)
+            .content(jsonBody)
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON));
+
+        result.andExpect(MockMvcResultMatchers.status().isUnprocessableEntity());
+    }
+
+    @Test //422
+    public void insertShouldReturnUnprocessableEntityWhenAdminLoggedAndInvalidDescription() throws Exception {
+
+        product.setDescription("videogame");
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions result = mockMvc.perform(MockMvcRequestBuilders.post("/products")
+            .header("Authorization", "Bearer " + adminToken)
+            .content(jsonBody)
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON));
+
+        result.andExpect(MockMvcResultMatchers.status().isUnprocessableEntity());
+    }
+
+    @Test //422
+    public void insertShouldReturnUnprocessableEntityWhenAdminLoggedAndNegativePrice() throws Exception {
+
+        product.setPrice(-400.0);
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions result = mockMvc.perform(MockMvcRequestBuilders.post("/products")
+            .header("Authorization", "Bearer " + adminToken)
+            .content(jsonBody)
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON));
+
+        result.andExpect(MockMvcResultMatchers.status().isUnprocessableEntity());
+    }
+
+    @Test //422
+    public void insertShouldReturnUnprocessableEntityWhenAdminLoggedAndZeroPrice() throws Exception {
+
+        product.setPrice(0.0);
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions result = mockMvc.perform(MockMvcRequestBuilders.post("/products")
+            .header("Authorization", "Bearer " + adminToken)
+            .content(jsonBody)
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON));
+
+        result.andExpect(MockMvcResultMatchers.status().isUnprocessableEntity());
+    }
+
+    @Test //422
+    public void insertShouldReturnUnprocessableEntityWhenAdminLoggedAndProductHasNoCategories() throws Exception {
+
+        product.getCategories().clear();
+        productDTO = new ProductDTO(product);
+        String jsonBody = objectMapper.writeValueAsString(productDTO);
+
+        ResultActions result = mockMvc.perform(MockMvcRequestBuilders.post("/products")
+            .header("Authorization", "Bearer " + adminToken)
+            .content(jsonBody)
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON));
+
+        result.andExpect(MockMvcResultMatchers.status().isUnprocessableEntity());
     }
 }

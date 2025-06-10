@@ -17,5 +17,21 @@ public class ProductFactory {
         product.setName(name);
         return product;
     }
+
+    /* public static ProductDTO createProductDTO() {
+        Category category = CategoryFactory.createCategory(2L, "Eletro");
+        Product product = new Product(null, "Play4", "videogame description", 4000.0, "url/img");
+        product.getCategories().add(category);
+        ProductDTO productDTO = new ProductDTO(product);
+        return productDTO;
+    }
+
+    public static ProductDTO createCustomProductDTO(String name, String description, double price) {
+        Category category = CategoryFactory.createCategory(2L, "Eletro");
+        Product product = new Product(null, name, description, price, "url/img");
+        product.getCategories().add(category);
+        ProductDTO productDTO = new ProductDTO(product);
+        return productDTO;
+    } */
     
 }
