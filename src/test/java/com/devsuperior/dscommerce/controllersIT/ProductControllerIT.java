@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.devsuperior.dscommerce.dto.ProductDTO;
-import com.devsuperior.dscommerce.entities.Category;
 import com.devsuperior.dscommerce.entities.Product;
 import com.devsuperior.dscommerce.tests.ProductFactory;
 import com.devsuperior.dscommerce.tests.TokenUtil;
@@ -36,7 +35,6 @@ public class ProductControllerIT {
     private ObjectMapper objectMapper;
 
     private Product product;
-    private Category category;
     private ProductDTO productDTO;
     private String productName;
     private String adminToken, clientToken, invalidToken;
